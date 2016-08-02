@@ -2,6 +2,8 @@ package com.dramacow.noccube;
 
 import android.util.Log;
 
+import java.util.Arrays;
+
 public class NOCCube {
 
     public static final int AXIS_X = 0;
@@ -9,8 +11,9 @@ public class NOCCube {
     public static final int AXIS_Z = 2;
 
     public final int D; // Cube dimensions
-    private NOCCube.Cube cubes[][][]; // z, y, x
+    public NOCCube.Cube cubes[][][]; // z, y, x  TODO: should this really be public?
 
+    /*
     private interface IntLambda {
         int operation(int a, int b, int c);
     }
@@ -32,9 +35,10 @@ public class NOCCube {
 
         return new_cubes;
     }
+    */
 
     public NOCCube(final int D) {
-        this.D = (D > 1 && D < 10) ? D : 2;
+        this.D = D > 1 ? D : 2;
 
         cubes = new NOCCube.Cube[D][D][D];
         for (int z = 0; z < D; z++) {
@@ -47,9 +51,15 @@ public class NOCCube {
     }
 
     public int[] rotate(final int axis, final int slice, final boolean clockwise) {
+        Log.d("SAM",
+            (axis == AXIS_X ? "X " : axis == AXIS_Y ? "Y " : "Z ") +
+            (Integer.toString(slice) + " ") +
+            (clockwise ? "clockwise" : "anti-clockwise")
+        );
+
         if (axis < 0 || axis >= 3 || slice < 0 || slice >= D) return new int[]{}; // Validate by return empty array
 
-        final int cubeHandles[] = new int[D*D];
+        final int cubeHandles[] = new int[D*D]; // TODO: make this a private member
 
         // Deep copy (NOTE: clone() appears to only make shallow copies for non-primitive arrays)
         Cube new_cubes[][][] = new Cube[D][D][D];
@@ -61,95 +71,120 @@ public class NOCCube {
             }
         }
 
-
-        printToLog();
-
+        // TODO: place each of the rotations into a seperate function
         switch (axis) {
             // x-axis
-            case AXIS_X:
+            case AXIS_X: {
                 for (int z = 0; z < D; z++) {
                     for (int y = 0; y < D; y++) {
-                        cubeHandles[y + D*z] = cubes[z][y][slice].displayHandle;
+                        cubeHandles[y + D * z] = cubes[z][y][slice].displayHandle;
                     }
                 }
 
                 for (int z = 0; z < D; z++) {
                     for (int y = 0; y < D; y++) {
-                        if (!clockwise) new_cubes[z][y][slice] = new NOCCube.Cube(cubes[y][(D-1)-z][slice]);
-                        else           new_cubes[z][y][slice] = new NOCCube.Cube(cubes[(D-1)-y][z][slice]);
+                        if (!clockwise) {
+                            new_cubes[z][y][slice] = new NOCCube.Cube(cubes[y][(D - 1) - z][slice]);
+                            new_cubes[z][y][slice].anglex = (new_cubes[z][y][slice].anglex - 90) % 360;
+                        } else {
+                            new_cubes[z][y][slice] = new NOCCube.Cube(cubes[(D - 1) - y][z][slice]);
+                            new_cubes[z][y][slice].anglex = (new_cubes[z][y][slice].anglex + 90) % 360;
+                        }
                     }
                 }
 
                 break;
+            }
 
             // y-axis
-            case AXIS_Y:
+            case AXIS_Y: {
                 for (int z = 0; z < D; z++) {
                     for (int x = 0; x < D; x++) {
-                        cubeHandles[x + D*z] = cubes[z][slice][x].displayHandle;
+                        cubeHandles[x + D * z] = cubes[z][slice][x].displayHandle;
                     }
                 }
 
                 for (int z = 0; z < D; z++) {
                     for (int x = 0; x < D; x++) {
-                        if (!clockwise) new_cubes[z][slice][x] = new NOCCube.Cube(cubes[(D-1)-x][slice][z]);
-                        else           new_cubes[z][slice][x] = new NOCCube.Cube(cubes[x][slice][(D-1)-z]);
+                        if (!clockwise) {
+                            new_cubes[z][slice][x] = new NOCCube.Cube(cubes[(D - 1) - x][slice][z]);
+                            new_cubes[z][slice][x].angley = (new_cubes[z][slice][x].angley - 90) % 360;
+                        } else {
+                            new_cubes[z][slice][x] = new NOCCube.Cube(cubes[x][slice][(D - 1) - z]);
+                            new_cubes[z][slice][x].angley = (new_cubes[z][slice][x].angley + 90) % 360;
+                        }
                     }
                 }
 
                 break;
+            }
 
             // z-axis
-            case AXIS_Z:
+            case AXIS_Z: {
                 for (int y = 0; y < D; y++) {
                     for (int x = 0; x < D; x++) {
-                        cubeHandles[x + D*y] = cubes[slice][y][x].displayHandle;
+                        cubeHandles[x + D * y] = cubes[slice][y][x].displayHandle;
                     }
                 }
 
                 for (int y = 0; y < D; y++) {
                     for (int x = 0; x < D; x++) {
-                        if (!clockwise) new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][x][(D-1)-y]);
-                        else           new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][(D-1)-x][y]);
+                        if (!clockwise) {
+                            new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][x][(D - 1) - y]);
+                            new_cubes[slice][y][x].anglez = (new_cubes[slice][y][x].anglez - 90) % 360;
+                        } else {
+                            new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][(D - 1) - x][y]);
+                            new_cubes[slice][y][x].anglez = (new_cubes[slice][y][x].anglez + 90) % 360;
+                        }
                     }
                 }
 
                 break;
+            }
         }
 
         cubes = new_cubes;
 
-        printToLog();
+        String message = "";
+        Arrays.sort(cubeHandles);
+        for (int h : cubeHandles) {
+            message += Integer.toString(h) + ", ";
+        }
+        Log.d("SAM", message);
 
         return cubeHandles;
     }
 
+    public boolean isSolved() {
+        for (int z = 0; z < D; z++) {
+            for (int y = 0; y < D; y++) {
+                for (int x = 0; x < D; x++) {
+                    if (cubes[z][y][x].displayHandle != x + D*y + D*D*z ||
+                        cubes[z][y][x].anglex != 0.0f                   ||
+                        cubes[z][y][x].angley != 0.0f                   ||
+                        cubes[z][y][x].anglez != 0.0f) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     public class Cube {
-        float anglex, angley;
+        int anglex, angley, anglez;
         final int displayHandle;
 
         public Cube(final int displayHandle) {
-            anglex = angley = 0.0f;
+            anglex = angley = anglez = 0;
             this.displayHandle = displayHandle;
         }
 
         public Cube(final Cube that) {
             this.anglex = that.anglex;
             this.angley = that.angley;
+            this.anglez = that.anglez;
             this.displayHandle = that.displayHandle;
-        }
-    }
-
-    public void printToLog() {
-        String line = "";
-
-        for (int z = 0; z < D; z++) {
-            for (int y = 0; y < D; y++) {
-                for (int x = 0; x < D; x++) {
-                    line += cubes[z][y][x].displayHandle + ", ";
-                }
-                Log.d("SAM", line); line = "";
-            }
         }
     }
 }

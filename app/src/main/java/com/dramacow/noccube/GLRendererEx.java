@@ -8,6 +8,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.SystemClock;
+import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -39,34 +40,28 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
     // Shader constants/variables
     private final String vertexShaderCode =
-            "uniform mat4 uMVPMatrix;" +
-
-                    "attribute vec4 aPosition;" +
-
-                    "attribute vec4 aColour;" +
-                    "varying vec4 vColour;" +
-
-                    "attribute vec2 aTexCoord;" +
-                    "varying vec2 vTexCoord;" +
-
-                    "void main() {" +
-                    "   vColour = aColour;" +
-                    "   vTexCoord = aTexCoord;" +
-                    "   gl_Position = uMVPMatrix * aPosition;" +
-                    "}";
+        "uniform mat4 uMVPMatrix;"                 +
+        "attribute vec4 aPosition;"                +
+        "attribute vec4 aColour;"                  +
+        "varying vec4 vColour;"                    +
+        "attribute vec2 aTexCoord;"                +
+        "varying vec2 vTexCoord;"                  +
+        "void main() {"                            +
+        "   vColour = aColour;"                    +
+        "   vTexCoord = aTexCoord;"                +
+        "   gl_Position = uMVPMatrix * aPosition;" +
+        "}";
 
     private final String fragmentShaderCode =
-            "precision mediump float;" +
-                    "varying vec4 vColour;" +
-
-                    "uniform sampler2D uTex;" +
-                    "varying vec2 vTexCoord;" +
-
-                    "void main() {" +
-                    //"   gl_FragColor = vColour;" +
-                    //"   gl_FragColor = vColour * texture2D(uTex, vTexCoord);" +
-                    "   gl_FragColor = texture2D(uTex, vTexCoord);" +
-                    "}";
+        "precision mediump float;"                      +
+        "varying vec4 vColour;"                         +
+        "uniform sampler2D uTex;"                       +
+        "varying vec2 vTexCoord;"                       +
+        "uniform float uAlpha;"                         +
+        "void main() {"                                 +
+        "   gl_FragColor = texture2D(uTex, vTexCoord);" +
+        "   gl_FragColor.a *= uAlpha;"                  +
+        "}";
 
     private int program;
 
@@ -91,6 +86,10 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // Necessary for maintaining correct alpha
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
+        // Enable blending
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
         // Set up shader
         int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
         int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
@@ -113,7 +112,7 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
         // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
         if (noccube == null) {
-            noccube = new NOCCube(3);
+            noccube = new NOCCube(4);
             noccubeRenderer = new NOCCubeRenderer(noccube, inside, textures);
         }
     }
@@ -144,24 +143,9 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
     // TEMP TEST FUNCTION
     public void permute(final int axis, final int slice,  final boolean clockwise) {
-        if (!noccubeRenderer.isAnimating() && noccubeRenderer.noccube !=  null) {
+        if (noccubeRenderer.getAnimationState() == NOCCubeRenderer.IDLE && noccubeRenderer.noccube !=  null) {
             final int cubeHandles[] = noccube.rotate(axis, slice, clockwise);
-
-            /*
-            Log.d("SAM",
-                    Integer.toString(cubeHandles.length) +
-                    Integer.toString(cubeHandles[0]) +
-                    Integer.toString(cubeHandles[1]) +
-                    Integer.toString(cubeHandles[2]) +
-                    Integer.toString(cubeHandles[3])
-            );
-            */
-
-            // Validate (Java uses shortcut binary operators,
-            // if the first operand of the operator or evaluates to true the output is always true,
-            // so the second operand can be skipped (this evades a potential nullPointerException)
             if (cubeHandles == null || cubeHandles.length == 0) return;
-
             noccubeRenderer.rotate(cubeHandles, axis, clockwise);
         }
     }

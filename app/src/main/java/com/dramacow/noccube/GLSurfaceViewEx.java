@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 public class GLSurfaceViewEx extends GLSurfaceView {
 
     private GLRendererEx renderer;
+    private boolean begin = false;
     private boolean rotatingCamera = false;
     private boolean rotatingCube = false;
 
@@ -46,8 +47,6 @@ public class GLSurfaceViewEx extends GLSurfaceView {
         final float norm_x = ( (2.0f*x) / w ) - 1.0f;
         final float norm_y = -( (2.0f*y) / h ) + 1.0f; // Negated since y-axis upside down in opengl
 
-        // Each case has their own scope to allow declaring different variables of the same names
-        // without throwing annoying/retarded errors.
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN: {
                 x1 = x;
@@ -63,8 +62,8 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                 } else {
                     rotatingCamera = true;
                 }
+                break;
             }
-            break;
 
             case MotionEvent.ACTION_MOVE: {
                 if (rotatingCamera) {
@@ -79,10 +78,16 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                     x1 = x2;
                     y1 = y2;
                 }
+                break;
             }
-            break;
 
             case MotionEvent.ACTION_UP: {
+                // TODO: hmm...
+                if (!begin) {
+                    begin = true;
+                    renderer.noccubeRenderer.begin();
+                }
+
                 if (rotatingCube) {
                     final float point[] = new float[3];
                     final int face = renderer.castRay(point, norm_x, norm_y);
@@ -140,8 +145,8 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                     }
                 }
                 rotatingCamera = rotatingCube = false;
+                break;
             }
-            break;
         }
 
         return true;
