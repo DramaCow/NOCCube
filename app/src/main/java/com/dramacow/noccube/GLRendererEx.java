@@ -17,21 +17,21 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     private Context context;
     private float time;
 
-    public CubeRenderer cube;
-
+    // GUI
     private Button btnBegin;
+    // Matrices
+    private final float guiMatrix[]
+            = new float[16];
 
-    /*TODO*/ private boolean beginflag = false;
-
+    // Cube graphic
+    public CubeRenderer cube;
     // Global rotation variables
     private float latitude, longitude;
     private float eyeX, eyeY, eyeZ;
     private float radius = 10.0f;
-
     // Local rotation variables
     public int face0; // initial face
     public float point0[]; // Initial touch point
-
     // Matrices
     private final float viewMatrix[]           // Matrix represents where the "camera" is/is facing
             = new float[16];
@@ -40,8 +40,10 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     private final float vpMatrix[]             // viewM * projectionM
             = new float[16];
 
-    private final float guiMatrix[]
-            = new float[16];
+    // Game states
+    private static final int MAIN_MENU = 0;
+    private static final int PLAY = 1;
+    private int state = MAIN_MENU;
 
     // Shader constants/variables
     private final String vertexShaderCode =
@@ -131,10 +133,21 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
                     NOCCube noccube = new NOCCube(4);
                     cube = new NOCCubeRenderer(noccube, inside, textures);
 
-                    beginflag = true;
+                    state = PLAY;
                 }
             }
         };
+    }
+
+    public void handleInput(final float x, final float y) {
+        //Log.d("SAM", "TOUCHED: " + x + ", " + y);
+
+        switch (state) {
+            case MAIN_MENU: {
+                btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0, 0, false);
+                break;
+            }
+        }
     }
 
     public void onDrawFrame(GL10 unused) {
@@ -145,17 +158,14 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // Redraw background colour
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-        // View-Projection
         Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        // TODO: too crude, eww!
-        if (!beginflag) {
-            btnBegin.draw(guiMatrix, program);
+        switch (state) {
+            case MAIN_MENU: {
+                btnBegin.draw(guiMatrix, program);
+                break;
+            }
         }
-        else {
-
-        }
-
         cube.draw(vpMatrix, program, dt);
     }
 
@@ -167,8 +177,6 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
         // Set projection matrix, to be used on eye co-ordinates on frame draw
         Matrix.frustumM(projectionMatrix, 0, ratio * -1, ratio * 1, -1, 1, 3, 32);
-
-        // ----------------
 
         /*float tmpMatrix[] = new float[16];
         Matrix.orthoM(guiMatrix, 0, ratio * -1, ratio * 1, -1, 1, 3, 32);
@@ -183,7 +191,7 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         setViewMatrix(latitude, longitude);
     }
 
-    public void setViewMatrix(float latitude, float longitude) {
+    private void setViewMatrix(float latitude, float longitude) {
         // Sphere rotation (eye co-ordinates)
         eyeX = (float) (-radius * Math.cos(latitude) * Math.sin(longitude)); // Since equation considers east positive, we must negate
         eyeY = (float) (radius * Math.sin(latitude));
@@ -196,17 +204,6 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // View                          |---EYE--------|  |---CENTER-----|  |--UP VECTOR-|
         // NOTE: vectors eye and up must be sufficiently perpendicular (i.e. not parallel), else viewMatrix is undefined
         Matrix.setLookAtM(viewMatrix, 0, eyeX, eyeY, eyeZ, 0.0f, 0.0f, 0.0f, upX, upY, upZ);
-    }
-
-    public void update(final float x, final float y) {
-        //Log.d("SAM", "TOUCHED: " + x + ", " + y);
-
-        if (!beginflag) {
-            btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0, 0, false);
-        }
-        else {
-            // ADD NOCCUBE CONTROL HERE
-        }
     }
 
     public int castRay(final float point[], final float x, final float y) {
