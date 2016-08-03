@@ -20,6 +20,9 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
     public NOCCube noccube;
     public NOCCubeRenderer noccubeRenderer;
+    public Cube displayCube;
+
+    private Button btnBegin;
 
     // Global rotation variables
     private float latitude, longitude;
@@ -36,6 +39,9 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     private final float projectionMatrix[]     // Matrix used to project eye coords to clip coords
             = new float[16];
     private final float vpMatrix[]             // viewM * projectionM
+            = new float[16];
+
+    private final float guiMatrix[]
             = new float[16];
 
     // Shader constants/variables
@@ -86,7 +92,7 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // Necessary for maintaining correct alpha
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
-        // Enable blending
+        // Enable blending (for alpha)
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -99,22 +105,48 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         GLES20.glAttachShader(program, fragmentShader); // add the fragment shader to program
         GLES20.glLinkProgram(program);
 
+        GLES20.glUseProgram(program);
+
         // Load resources
         final int inside = loadTexture(context, R.drawable.inside);
         final int textures[] = {
-                loadTexture(context, R.drawable.blue),
-                loadTexture(context, R.drawable.green),
-                loadTexture(context, R.drawable.red),
-                loadTexture(context, R.drawable.orange),
-                loadTexture(context, R.drawable.yellow),
-                loadTexture(context, R.drawable.purple)
+            loadTexture(context, R.drawable.blue),
+            loadTexture(context, R.drawable.green),
+            loadTexture(context, R.drawable.red),
+            loadTexture(context, R.drawable.orange),
+            loadTexture(context, R.drawable.yellow),
+            loadTexture(context, R.drawable.purple)
         };
+        final int begin = loadTexture(context, R.drawable.begin);
 
         // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
         if (noccube == null) {
             noccube = new NOCCube(4);
             noccubeRenderer = new NOCCubeRenderer(noccube, inside, textures);
         }
+
+        // GUI setup
+        // =========
+
+        // All important display cube
+        displayCube = new Cube(
+            new int[] {
+                textures[0], textures[1], textures[2],
+                textures[3], textures[4], textures[5],
+            },
+            new float[][] {
+                Cube.fullFaceTexCoords, Cube.fullFaceTexCoords, Cube.fullFaceTexCoords,
+                Cube.fullFaceTexCoords, Cube.fullFaceTexCoords, Cube.fullFaceTexCoords
+            }
+        );
+
+        Matrix.setIdentityM(guiMatrix, 0);
+        btnBegin = new Button(begin) {
+            @Override
+            public void onClick() {
+                Log.d("SAM", "CLICKED");
+            }
+        };
     }
 
     public void onDrawFrame(GL10 unused) {
@@ -128,7 +160,9 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // View-Projection
         Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        noccubeRenderer.draw(vpMatrix, program, dt);
+        //noccubeRenderer.draw(vpMatrix, program, dt);
+        displayCube.draw(vpMatrix, program, 1.0f);
+        btnBegin.draw(guiMatrix, program);
     }
 
     public void onSurfaceChanged(GL10 unused, int width, int height) {
@@ -139,6 +173,15 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
         // Set projection matrix, to be used on eye co-ordinates on frame draw
         Matrix.frustumM(projectionMatrix, 0, ratio * -1, ratio * 1, -1, 1, 3, 32);
+
+        // ----------------
+
+        /*float tmpMatrix[] = new float[16];
+        Matrix.orthoM(guiMatrix, 0, ratio * -1, ratio * 1, -1, 1, 3, 32);
+        Matrix.setLookAtM(tmpMatrix, 0, eyeX, eyeY, eyeZ, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+        Matrix.multiplyMM(guiMatrix, 0, guiMatrix.clone(), 0, tmpMatrix, 0);*/
+
+        btnBegin.set(0.0f, -0.625f, 0.625f, 0.1f);
     }
 
     // TEMP TEST FUNCTION
@@ -165,16 +208,17 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         final float upY = (float) Math.signum(Math.cos(latitude)); // d/dy (sin(y)) [1 | -1 | 0]
         final float upZ = upY == 0.0f ? (float) Math.signum(-Math.sin(latitude)) : 0.0f; // d/dt (cos(y)) [cannot be 0 if upY is 0]
 
-        /*
-        Log.d("SAM", "ANGLES: " + Double.toString(longitude/Math.PI) + ", " + Double.toString(latitude/Math.PI));
-        Log.d("SAM", "EYE: " + Float.toString(eyeX) + ", " + Float.toString(eyeY) + ", " + Float.toString(eyeZ));
-        Log.d("SAM", "TRIG: " + Double.toString(Math.sin(longitude)));
-        Log.d("SAM", "UP: " + Float.toString(upY));
-        */
-
         // View                          |---EYE--------|  |---CENTER-----|  |--UP VECTOR-|
         // NOTE: vectors eye and up must be sufficiently perpendicular (i.e. not parallel), else viewMatrix is undefined
         Matrix.setLookAtM(viewMatrix, 0, eyeX, eyeY, eyeZ, 0.0f, 0.0f, 0.0f, upX, upY, upZ);
+    }
+
+    public void update(final float x, final float y) {
+        //Log.d("SAM", "TOUCHED: " + x + ", " + y);
+
+        // ADD CUBE CONTROL HERE
+
+        btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0,0,false);
     }
 
     public int castRay(final float point[], final float x, final float y) {
@@ -216,9 +260,9 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
             float t = -( (eyeX*n[0] + eyeY*n[1] + eyeZ*n[2]) - d ) / denom;
 
             final float p[] = { //point
-                    eyeX + t*D[0],
-                    eyeY + t*D[1],
-                    eyeZ + t*D[2],
+                eyeX + t*D[0],
+                eyeY + t*D[1],
+                eyeZ + t*D[2],
             };
 
             if (!((-1.0f <= p[0] && p[0] <= 1.0f) && (-1.0f <= p[1] && p[1] <= 1.0f) && (-1.0f <= p[2] && p[2] <= 1.0f))) {
@@ -229,18 +273,6 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
                 distance = t;
                 face = i;
             }
-
-            /*
-            Log.d("SAM", "Normal" + i + ": " + n[0] + ", " + n[1] + ", " + n[2]);
-            Log.d("SAM,", " Denom: " + denom + ", Dist: " + d);
-
-            Log.d("SAM", " t: " + t);
-            Log.d("SAM", i + "TPOINT: " +
-                            Float.toString(eyeX + t*D[0]) + ", " +
-                            Float.toString(eyeY + t*D[1]) + ", " +
-                            Float.toString(eyeZ + t*D[2])
-            );
-            */
         }
 
         point[0] = eyeX + distance*D[0];

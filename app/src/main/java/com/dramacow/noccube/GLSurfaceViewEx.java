@@ -8,7 +8,6 @@ import android.view.MotionEvent;
 public class GLSurfaceViewEx extends GLSurfaceView {
 
     private GLRendererEx renderer;
-    private boolean begin = false;
     private boolean rotatingCamera = false;
     private boolean rotatingCube = false;
 
@@ -17,13 +16,8 @@ public class GLSurfaceViewEx extends GLSurfaceView {
 
     GLSurfaceViewEx(Context context) {
         super(context);
-
-        // Create ES 2.0 context
         setEGLContextClientVersion(2);
-
         renderer = new GLRendererEx(context); //SHADER GETS CREATED IN HERE
-
-        // Set the renderer for drawing on GLSurfaceView
         setRenderer(renderer);
 
         // Render the view only when there is a change in the drawing data (only ideal for GUIs)
@@ -49,6 +43,8 @@ public class GLSurfaceViewEx extends GLSurfaceView {
 
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN: {
+                renderer.update(norm_x, norm_y);
+
                 x1 = x;
                 y1 = y;
 
@@ -82,12 +78,6 @@ public class GLSurfaceViewEx extends GLSurfaceView {
             }
 
             case MotionEvent.ACTION_UP: {
-                // TODO: hmm...
-                if (!begin) {
-                    begin = true;
-                    renderer.noccubeRenderer.begin();
-                }
-
                 if (rotatingCube) {
                     final float point[] = new float[3];
                     final int face = renderer.castRay(point, norm_x, norm_y);
@@ -105,12 +95,12 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                         if (face == 0 || face == 1) {
                             if (Math.abs(delta[0]) < Math.abs(delta[1])) {
                                 axis = NOCCube.AXIS_X;
-                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 0 && delta[1] < 0.0f) || (face == 1 && delta[1] >= 0.0f);
                             }
                             else {
                                 axis = NOCCube.AXIS_Y;
-                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 0 && delta[0] >= 0.0f) || (face == 1 && delta[0] < 0.0f);
                             }
                         }
@@ -118,12 +108,12 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                         else if (face == 2 || face == 3) {
                             if (Math.abs(delta[1]) < Math.abs(delta[2])) {
                                 axis = NOCCube.AXIS_Y;
-                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 2 && delta[2] >= 0.0f) || (face == 3 && delta[2] < 0.0f);
                             }
                             else {
                                 axis = NOCCube.AXIS_Z;
-                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 2 && delta[1] < 0.0f) || (face == 3 && delta[1] >= 0.0f);
                             }
                         }
@@ -131,12 +121,12 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                         else if (face == 4 || face == 5) {
                             if (Math.abs(delta[0]) < Math.abs(delta[2])) {
                                 axis = NOCCube.AXIS_X;
-                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 4 && delta[2] >= 0.0f) || (face == 5 && delta[2] < 0.0f);
                             }
                             else {
                                 axis = NOCCube.AXIS_Z;
-                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.D );
+                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.d );
                                 clockwise = (face == 4 && delta[0] < 0.0f) || (face == 5 && delta[0] >= 0.0f);
                             }
                         }

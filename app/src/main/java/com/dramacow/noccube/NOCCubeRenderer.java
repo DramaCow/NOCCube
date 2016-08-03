@@ -3,8 +3,6 @@ package com.dramacow.noccube;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import java.util.Random;
-
 public class NOCCubeRenderer {
 
     public final NOCCube noccube;
@@ -18,14 +16,16 @@ public class NOCCubeRenderer {
     public static final int SOLVED     = 5;
     public static final int COMPLETE   = 6;
 
-    private int animation_state = IDLE;
+    private int animation_state = EXPAND;
 
+    // Rotation variables
     private int animated_cubes[] = new int[]{};
     private int rotational_axis;
     private float rotational_angle;
     private float direction;
     private float angular_speed = (float) Math.toDegrees(4.0*Math.PI);
 
+    // Seperation variables (and constants)
     private static final float INIT_SEPERATION = 2.125f;
     private static final float INIT_SEP_VELOCITY = 128.0f;
     private static final float SEP_ACCELERATION = -4.0f;
@@ -33,8 +33,7 @@ public class NOCCubeRenderer {
     private float sep_velocity = INIT_SEP_VELOCITY;
     private float alpha = 1.0f;
 
-    private float sep_val = 0.0f;
-
+    // Normals used in ray casting
     public static float normal[] = {
         0.0f, 0.0f, 1.0f, // front face
         0.0f, 0.0f, -1.0f, // back face
@@ -48,7 +47,7 @@ public class NOCCubeRenderer {
     public NOCCubeRenderer(final NOCCube noccube, final int blank, final int tex[]) {
         this.noccube = noccube;
 
-        final int d = noccube != null ? noccube.D : 2;
+        final int d = noccube != null ? noccube.d : 2;
         cubes = new Cube[d*d*d];
 
         for (int z = 0; z < d; z++) {
@@ -86,9 +85,9 @@ public class NOCCubeRenderer {
                     Matrix.setIdentityM(cubes[i].modelM, 0);
                     Matrix.translateM(
                         cubes[i].modelM, 0,
-                        2.125f * (x-diff),
-                        2.125f * (y-diff),
-                        2.125f * (z-diff)
+                        2.0f * (x-diff),
+                        2.0f * (y-diff),
+                        2.0f * (z-diff)
                     );
                 }
             }
@@ -116,7 +115,7 @@ public class NOCCubeRenderer {
         final float rvpMatrix[] = vpMatrix.clone();
 
         // scale
-        final float scale = noccube != null ? 1.0f/(float)noccube.D : 1.0f/2.0f; // Validation check
+        final float scale = noccube != null ? 1.0f/(float)noccube.d : 1.0f/2.0f; // Validation check
         Matrix.scaleM(rvpMatrix, 0, scale, scale, scale);
 
         switch (animation_state) {
@@ -197,8 +196,6 @@ public class NOCCubeRenderer {
         }
     }
 
-    // ---
-
     private void rotateCubes(final int[] cubeHandles, final float angle, final int rotational_axis, final float direction) {
         final float tmpMatrix[] = new float[16];
 
@@ -232,7 +229,7 @@ public class NOCCubeRenderer {
     }
 
     private void setCubePosition(final float s) {
-        final int d = noccube != null ? noccube.D : 2;
+        final int d = noccube != null ? noccube.d : 2;
 
         NOCCube.Cube cube_model[][][] = noccube.cubes;
 
@@ -252,17 +249,11 @@ public class NOCCubeRenderer {
                     M[12] = s * (x - diff); M[13] = s * (y - diff); M[14] = s * (z - diff); M[15] = 1.0f;
 
                     /*Log.d("SAM", M[0] + " " + M[1] + " " + M[2] + " " + M[3] + "\n" +
-                    M[4] + " " + M[5] + " " + M[6] + " " + M[7] + "\n" +
-                    M[8] + " " + M[9] + " " + M[10] + " " + M[11] + "\n" +
-                    M[12] + " " + M[13] + " " + M[14] + " " + M[15]);*/
+                                 M[4] + " " + M[5] + " " + M[6] + " " + M[7] + "\n" +
+                                 M[8] + " " + M[9] + " " + M[10] + " " + M[11] + "\n" +
+                                 M[12] + " " + M[13] + " " + M[14] + " " + M[15]);*/
                 }
             }
         }
-    }
-
-    // TODO: hmm...
-    // TODO: add toggle enable cube input
-    public void begin() {
-        animation_state = EXPAND;
     }
 }
