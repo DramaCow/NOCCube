@@ -29,7 +29,7 @@ public class NOCCubeRenderer {
     private static final float INIT_SEPERATION = 2.125f;
     private static final float INIT_SEP_VELOCITY = 128.0f;
     private static final float SEP_ACCELERATION = -4.0f;
-    private float seperation = INIT_SEPERATION;
+    private float seperation = 2.0f;
     private float sep_velocity = INIT_SEP_VELOCITY;
     private float alpha = 1.0f;
 
@@ -120,7 +120,7 @@ public class NOCCubeRenderer {
 
         switch (animation_state) {
             case EXPAND: {
-                seperation += 8.0f * dt;
+                seperation += 4.0f * dt;
 
                 if (seperation >= INIT_SEPERATION + 1.0f) {
                     seperation = INIT_SEPERATION + 1.0f;
@@ -136,7 +136,7 @@ public class NOCCubeRenderer {
             }
 
             case CONTRACT: {
-                seperation += -8.0f * dt;
+                seperation += -4.0f * dt;
 
                 if (seperation <= INIT_SEPERATION) {
                     seperation = INIT_SEPERATION;

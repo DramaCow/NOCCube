@@ -24,6 +24,8 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
     private Button btnBegin;
 
+    /*TODO*/ private boolean beginflag = false;
+
     // Global rotation variables
     private float latitude, longitude;
     private float eyeX, eyeY, eyeZ;
@@ -119,12 +121,6 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         };
         final int begin = loadTexture(context, R.drawable.begin);
 
-        // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
-        if (noccube == null) {
-            noccube = new NOCCube(4);
-            noccubeRenderer = new NOCCubeRenderer(noccube, inside, textures);
-        }
-
         // GUI setup
         // =========
 
@@ -144,7 +140,13 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         btnBegin = new Button(begin) {
             @Override
             public void onClick() {
-                Log.d("SAM", "CLICKED");
+                // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
+                if (noccube == null) {
+                    noccube = new NOCCube(4);
+                    noccubeRenderer = new NOCCubeRenderer(noccube, inside, textures);
+                }
+
+                beginflag = true;
             }
         };
     }
@@ -160,9 +162,14 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         // View-Projection
         Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        //noccubeRenderer.draw(vpMatrix, program, dt);
-        displayCube.draw(vpMatrix, program, 1.0f);
-        btnBegin.draw(guiMatrix, program);
+        // TODO: too crude, eww!
+        if (!beginflag) {
+            displayCube.draw(vpMatrix, program, 1.0f);
+            btnBegin.draw(guiMatrix, program);
+        }
+        else {
+            noccubeRenderer.draw(vpMatrix, program, dt);
+        }
     }
 
     public void onSurfaceChanged(GL10 unused, int width, int height) {
@@ -216,9 +223,12 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     public void update(final float x, final float y) {
         //Log.d("SAM", "TOUCHED: " + x + ", " + y);
 
-        // ADD CUBE CONTROL HERE
-
-        btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0,0,false);
+        if (!beginflag) {
+            btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0, 0, false);
+        }
+        else {
+            // ADD NOCCUBE CONTROL HERE
+        }
     }
 
     public int castRay(final float point[], final float x, final float y) {
