@@ -8,7 +8,6 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.SystemClock;
-import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -18,9 +17,7 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     private Context context;
     private float time;
 
-    public NOCCube noccube;
-    public NOCCubeRenderer noccubeRenderer;
-    public Cube displayCube;
+    public CubeRenderer cube;
 
     private Button btnBegin;
 
@@ -123,30 +120,19 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
         // GUI setup
         // =========
-
-        // All important display cube
-        displayCube = new Cube(
-            new int[] {
-                textures[0], textures[1], textures[2],
-                textures[3], textures[4], textures[5],
-            },
-            new float[][] {
-                Cube.fullFaceTexCoords, Cube.fullFaceTexCoords, Cube.fullFaceTexCoords,
-                Cube.fullFaceTexCoords, Cube.fullFaceTexCoords, Cube.fullFaceTexCoords
-            }
-        );
+        cube = new DisplayCubeRenderer(textures);
 
         Matrix.setIdentityM(guiMatrix, 0);
         btnBegin = new Button(begin) {
             @Override
             public void onClick() {
                 // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
-                if (noccube == null) {
-                    noccube = new NOCCube(4);
-                    noccubeRenderer = new NOCCubeRenderer(noccube, inside, textures);
-                }
+                if (!(cube instanceof NOCCubeRenderer)) {
+                    NOCCube noccube = new NOCCube(4);
+                    cube = new NOCCubeRenderer(noccube, inside, textures);
 
-                beginflag = true;
+                    beginflag = true;
+                }
             }
         };
     }
@@ -164,12 +150,13 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
 
         // TODO: too crude, eww!
         if (!beginflag) {
-            displayCube.draw(vpMatrix, program, 1.0f);
             btnBegin.draw(guiMatrix, program);
         }
         else {
-            noccubeRenderer.draw(vpMatrix, program, dt);
+
         }
+
+        cube.draw(vpMatrix, program, dt);
     }
 
     public void onSurfaceChanged(GL10 unused, int width, int height) {
@@ -189,15 +176,6 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(guiMatrix, 0, guiMatrix.clone(), 0, tmpMatrix, 0);*/
 
         btnBegin.set(0.0f, -0.625f, 0.625f, 0.1f);
-    }
-
-    // TEMP TEST FUNCTION
-    public void permute(final int axis, final int slice,  final boolean clockwise) {
-        if (noccubeRenderer.getAnimationState() == NOCCubeRenderer.IDLE && noccubeRenderer.noccube !=  null) {
-            final int cubeHandles[] = noccube.rotate(axis, slice, clockwise);
-            if (cubeHandles == null || cubeHandles.length == 0) return;
-            noccubeRenderer.rotate(cubeHandles, axis, clockwise);
-        }
     }
 
     public void adjustViewAngle(float latAdj, float longAdj) {

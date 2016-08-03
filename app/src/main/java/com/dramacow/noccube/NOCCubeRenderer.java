@@ -3,7 +3,7 @@ package com.dramacow.noccube;
 import android.opengl.Matrix;
 import android.util.Log;
 
-public class NOCCubeRenderer {
+public class NOCCubeRenderer implements CubeRenderer {
 
     public final NOCCube noccube;
     public final Cube[] cubes;
@@ -98,16 +98,23 @@ public class NOCCubeRenderer {
         return animation_state;
     }
 
-    public void rotate(final int cubeHandles[], final int axis, final boolean clockwise) {
-        animation_state = ROTATING;
-        animated_cubes = cubeHandles;
-        rotational_axis = axis;
-        rotational_angle = 0.0f;
-        direction = clockwise ? 1.0f : -1.0f;
+    @Override
+    public void permute(final int axis, final int slice, final boolean clockwise) {
+        if (this.getAnimationState() == NOCCubeRenderer.IDLE && this.noccube != null) {
+            final int cubeHandles[] = this.noccube.rotate(axis, slice, clockwise);
+            if (cubeHandles == null || cubeHandles.length == 0) return;
 
-        Log.d("SAM", "ROTATION TRIGGERED");
+            animation_state = ROTATING;
+            animated_cubes = cubeHandles;
+            rotational_axis = axis;
+            rotational_angle = 0.0f;
+            direction = clockwise ? 1.0f : -1.0f;
+
+            Log.d("SAM", "ROTATION TRIGGERED");
+        }
     }
 
+    @Override
     public void draw(final float[] vpMatrix, final int program, final float dt) {
         // Sub-transformations are specified in the reverse order you wish them to occur in:
         // scale <- locale rotate <- translate
@@ -161,7 +168,7 @@ public class NOCCubeRenderer {
                     Log.d("SAM", animation_state == SOLVED ? "SOLVED" : "UNSOLVED");
                 }
 
-                rotateCubes(animated_cubes, angle, rotational_axis, direction);
+                rotate(animated_cubes, angle, rotational_axis, direction);
 
                 break;
             }
@@ -196,7 +203,7 @@ public class NOCCubeRenderer {
         }
     }
 
-    private void rotateCubes(final int[] cubeHandles, final float angle, final int rotational_axis, final float direction) {
+    private void rotate(final int[] cubeHandles, final float angle, final int rotational_axis, final float direction) {
         final float tmpMatrix[] = new float[16];
 
         String message = "";

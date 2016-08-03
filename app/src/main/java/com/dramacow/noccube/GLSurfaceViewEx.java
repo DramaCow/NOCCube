@@ -83,24 +83,30 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                     final int face = renderer.castRay(point, norm_x, norm_y);
 
                     if (face == renderer.face0) {
+                        int d = 1;
+                        if (renderer.cube instanceof NOCCubeRenderer) {
+                            d = ((NOCCubeRenderer)renderer.cube).noccube.d;
+                        }
+
                         final float delta[] = {
                                 point[0] - renderer.point0[0],
                                 point[1] - renderer.point0[1],
                                 point[2] - renderer.point0[2]
                         };
 
-                        int axis = 0; int slice = 0; boolean clockwise = false;
+                        int axis = 0;
+                        int slice = 0;
+                        boolean clockwise = false;
 
                         // front and back faces
                         if (face == 0 || face == 1) {
                             if (Math.abs(delta[0]) < Math.abs(delta[1])) {
                                 axis = NOCCube.AXIS_X;
-                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[0] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 0 && delta[1] < 0.0f) || (face == 1 && delta[1] >= 0.0f);
-                            }
-                            else {
+                            } else {
                                 axis = NOCCube.AXIS_Y;
-                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[1] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 0 && delta[0] >= 0.0f) || (face == 1 && delta[0] < 0.0f);
                             }
                         }
@@ -108,12 +114,11 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                         else if (face == 2 || face == 3) {
                             if (Math.abs(delta[1]) < Math.abs(delta[2])) {
                                 axis = NOCCube.AXIS_Y;
-                                slice = (int) Math.floor( ((renderer.point0[1] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[1] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 2 && delta[2] >= 0.0f) || (face == 3 && delta[2] < 0.0f);
-                            }
-                            else {
+                            } else {
                                 axis = NOCCube.AXIS_Z;
-                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[2] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 2 && delta[1] < 0.0f) || (face == 3 && delta[1] >= 0.0f);
                             }
                         }
@@ -121,17 +126,16 @@ public class GLSurfaceViewEx extends GLSurfaceView {
                         else if (face == 4 || face == 5) {
                             if (Math.abs(delta[0]) < Math.abs(delta[2])) {
                                 axis = NOCCube.AXIS_X;
-                                slice = (int) Math.floor( ((renderer.point0[0] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[0] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 4 && delta[2] >= 0.0f) || (face == 5 && delta[2] < 0.0f);
-                            }
-                            else {
+                            } else {
                                 axis = NOCCube.AXIS_Z;
-                                slice = (int) Math.floor( ((renderer.point0[2] + 1.0f)/2.0f) * renderer.noccube.d );
+                                slice = (int) Math.floor(((renderer.point0[2] + 1.0f) / 2.0f) * d);
                                 clockwise = (face == 4 && delta[0] < 0.0f) || (face == 5 && delta[0] >= 0.0f);
                             }
                         }
 
-                        renderer.permute(axis, slice, clockwise);
+                        renderer.cube.permute(axis, slice, clockwise);
                     }
                 }
                 rotatingCamera = rotatingCube = false;
