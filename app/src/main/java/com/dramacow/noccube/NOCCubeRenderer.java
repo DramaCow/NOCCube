@@ -3,6 +3,8 @@ package com.dramacow.noccube;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import java.util.Random;
+
 public class NOCCubeRenderer {
 
     public final NOCCube noccube;
@@ -124,7 +126,9 @@ public class NOCCubeRenderer {
                 if (seperation >= INIT_SEPERATION + 1.0f) {
                     seperation = INIT_SEPERATION + 1.0f;
                     animation_state = CONTRACT;
-                    scramble();
+
+                    noccube.scramble();
+                    setCubePosition(seperation);
                 }
 
                 setCubePosition(seperation);
@@ -146,6 +150,9 @@ public class NOCCubeRenderer {
             }
 
             case ROTATING: {
+                /*setCubePosition(seperation);
+                animation_state = noccube.isSolved() ? SOLVED : IDLE;*/
+
                 float angle = angular_speed * dt;
                 rotational_angle += angle;
 
@@ -224,18 +231,6 @@ public class NOCCubeRenderer {
         }
     }
 
-    private void scramble() {
-        int cubeHandles[];
-
-//        cubeHandles = noccube.rotate(NOCCube.AXIS_X, 0, true);
-//        if (cubeHandles == null || cubeHandles.length == 0) return;
-//        rotateCubes(cubeHandles, 90.0f, NOCCube.AXIS_X, 1.0f);
-
-//        cubeHandles = noccube.rotate(NOCCube.AXIS_Y, 0, true);
-//        if (cubeHandles == null || cubeHandles.length == 0) return;
-//        rotateCubes(cubeHandles, 90.0f, NOCCube.AXIS_Y, 1.0f);
-    }
-
     private void setCubePosition(final float s) {
         final int d = noccube != null ? noccube.D : 2;
 
@@ -244,16 +239,22 @@ public class NOCCubeRenderer {
         for (int z = 0; z < d; z++) {
             for (int y = 0; y < d; y++) {
                 for (int x = 0; x < d; x++) {
+                    // For setting (0,0) as the centre
                     final float diff = (d - 1.0f) / 2.0f;
-                    final float modelM[] = cubes[cube_model[z][y][x].displayHandle].modelM;
 
-                    Matrix.setIdentityM(modelM, 0);
-                    Matrix.translateM(
-                        modelM, 0,
-                        s * (x - diff),
-                        s * (y - diff),
-                        s * (z - diff)
-                    );
+                    // Quick alias'
+                    final float M[] = cubes[cube_model[z][y][x].displayHandle].modelM;
+                    final int R[]   = cube_model[z][y][x].R;
+
+                    M[0]  =           R[0]; M[1]  =           R[1]; M[2]  =           R[2]; M[3]  = 0.0f;
+                    M[4]  =           R[3]; M[5]  =           R[4]; M[6]  =           R[5]; M[7]  = 0.0f;
+                    M[8]  =           R[6]; M[9]  =           R[7]; M[10] =           R[8]; M[11] = 0.0f;
+                    M[12] = s * (x - diff); M[13] = s * (y - diff); M[14] = s * (z - diff); M[15] = 1.0f;
+
+                    /*Log.d("SAM", M[0] + " " + M[1] + " " + M[2] + " " + M[3] + "\n" +
+                    M[4] + " " + M[5] + " " + M[6] + " " + M[7] + "\n" +
+                    M[8] + " " + M[9] + " " + M[10] + " " + M[11] + "\n" +
+                    M[12] + " " + M[13] + " " + M[14] + " " + M[15]);*/
                 }
             }
         }

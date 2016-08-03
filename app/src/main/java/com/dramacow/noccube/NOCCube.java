@@ -3,6 +3,7 @@ package com.dramacow.noccube;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class NOCCube {
 
@@ -11,31 +12,9 @@ public class NOCCube {
     public static final int AXIS_Z = 2;
 
     public final int D; // Cube dimensions
-    public NOCCube.Cube cubes[][][]; // z, y, x  TODO: should this really be public?
 
-    /*
-    private interface IntLambda {
-        int operation(int a, int b, int c);
-    }
-
-    private int operate(IntLambda op, int a, int b, int c) {
-        return op.operation(a, b, c);
-    }
-
-    private Cube[][][] permute(IntLambda opX, IntLambda opY, IntLambda opZ) {
-        final Cube new_cubes[][][] = new NOCCube.Cube[D][D][D];
-
-        for (int z = 0; z < D; z++) {
-            for (int y = 0; y < D; y++) {
-                for (int x = 0; x < D; x++) {
-                    new_cubes[z][y][x] = cubes[operate(opZ, x, y, z)][operate(opY, x, y, z)][operate(opX, x, y, z)];
-                }
-            }
-        }
-
-        return new_cubes;
-    }
-    */
+    private boolean solved = false;
+    public NOCCube.Cube cubes[][][]; // z, y, x TODO: should not be public
 
     public NOCCube(final int D) {
         this.D = D > 1 ? D : 2;
@@ -50,18 +29,30 @@ public class NOCCube {
         }
     }
 
+    public void scramble() {
+        Random rand = new Random();
+        for (int i = 0; i < 1 /*D*D*D*/; i++) {
+            this.rotate(
+                rand.nextInt(3),   // axis
+                rand.nextInt(D),   // slice
+                rand.nextBoolean() // direction (clockwise)
+            );
+        }
+    }
+
     public int[] rotate(final int axis, final int slice, final boolean clockwise) {
+        // Validate rotation input
+        if (axis < 0 || axis >= 3 || slice < 0 || slice >= D) return new int[]{};
+
         Log.d("SAM",
             (axis == AXIS_X ? "X " : axis == AXIS_Y ? "Y " : "Z ") +
             (Integer.toString(slice) + " ") +
             (clockwise ? "clockwise" : "anti-clockwise")
         );
 
-        if (axis < 0 || axis >= 3 || slice < 0 || slice >= D) return new int[]{}; // Validate by return empty array
-
         final int cubeHandles[] = new int[D*D]; // TODO: make this a private member
 
-        // Deep copy (NOTE: clone() appears to only make shallow copies for non-primitive arrays)
+        // Deep copy
         Cube new_cubes[][][] = new Cube[D][D][D];
         for (int z = 0; z < D; z++) {
             for (int y = 0; y < D; y++) {
@@ -71,28 +62,19 @@ public class NOCCube {
             }
         }
 
-        // TODO: place each of the rotations into a seperate function
         switch (axis) {
             // x-axis
             case AXIS_X: {
                 for (int z = 0; z < D; z++) {
                     for (int y = 0; y < D; y++) {
-                        cubeHandles[y + D * z] = cubes[z][y][slice].displayHandle;
+                        cubeHandles[y + D*z] = cubes[z][y][slice].displayHandle;
+
+                        if (!clockwise) new_cubes[z][y][slice] = new NOCCube.Cube(cubes[y][(D - 1) - z][slice]);
+                        else            new_cubes[z][y][slice] = new NOCCube.Cube(cubes[(D - 1) - y][z][slice]);
+
+                        new_cubes[z][y][slice].rotateX(clockwise);
                     }
                 }
-
-                for (int z = 0; z < D; z++) {
-                    for (int y = 0; y < D; y++) {
-                        if (!clockwise) {
-                            new_cubes[z][y][slice] = new NOCCube.Cube(cubes[y][(D - 1) - z][slice]);
-                            new_cubes[z][y][slice].anglex = (new_cubes[z][y][slice].anglex - 90) % 360;
-                        } else {
-                            new_cubes[z][y][slice] = new NOCCube.Cube(cubes[(D - 1) - y][z][slice]);
-                            new_cubes[z][y][slice].anglex = (new_cubes[z][y][slice].anglex + 90) % 360;
-                        }
-                    }
-                }
-
                 break;
             }
 
@@ -100,22 +82,14 @@ public class NOCCube {
             case AXIS_Y: {
                 for (int z = 0; z < D; z++) {
                     for (int x = 0; x < D; x++) {
-                        cubeHandles[x + D * z] = cubes[z][slice][x].displayHandle;
+                        cubeHandles[x + D*z] = cubes[z][slice][x].displayHandle;
+
+                        if (!clockwise) new_cubes[z][slice][x] = new NOCCube.Cube(cubes[(D - 1) - x][slice][z]);
+                        else            new_cubes[z][slice][x] = new NOCCube.Cube(cubes[x][slice][(D - 1) - z]);
+
+                        new_cubes[z][slice][x].rotateY(clockwise);
                     }
                 }
-
-                for (int z = 0; z < D; z++) {
-                    for (int x = 0; x < D; x++) {
-                        if (!clockwise) {
-                            new_cubes[z][slice][x] = new NOCCube.Cube(cubes[(D - 1) - x][slice][z]);
-                            new_cubes[z][slice][x].angley = (new_cubes[z][slice][x].angley - 90) % 360;
-                        } else {
-                            new_cubes[z][slice][x] = new NOCCube.Cube(cubes[x][slice][(D - 1) - z]);
-                            new_cubes[z][slice][x].angley = (new_cubes[z][slice][x].angley + 90) % 360;
-                        }
-                    }
-                }
-
                 break;
             }
 
@@ -123,68 +97,117 @@ public class NOCCube {
             case AXIS_Z: {
                 for (int y = 0; y < D; y++) {
                     for (int x = 0; x < D; x++) {
-                        cubeHandles[x + D * y] = cubes[slice][y][x].displayHandle;
+                        cubeHandles[x + D*y] = cubes[slice][y][x].displayHandle;
+
+                        if (!clockwise) new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][x][(D - 1) - y]);
+                        else            new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][(D - 1) - x][y]);
+
+                        new_cubes[slice][y][x].rotateZ(clockwise);
                     }
                 }
-
-                for (int y = 0; y < D; y++) {
-                    for (int x = 0; x < D; x++) {
-                        if (!clockwise) {
-                            new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][x][(D - 1) - y]);
-                            new_cubes[slice][y][x].anglez = (new_cubes[slice][y][x].anglez - 90) % 360;
-                        } else {
-                            new_cubes[slice][y][x] = new NOCCube.Cube(cubes[slice][(D - 1) - x][y]);
-                            new_cubes[slice][y][x].anglez = (new_cubes[slice][y][x].anglez + 90) % 360;
-                        }
-                    }
-                }
-
                 break;
             }
         }
 
         cubes = new_cubes;
-
-        String message = "";
-        Arrays.sort(cubeHandles);
-        for (int h : cubeHandles) {
-            message += Integer.toString(h) + ", ";
-        }
-        Log.d("SAM", message);
-
+        solved = checkSolved();
         return cubeHandles;
     }
 
     public boolean isSolved() {
+        return solved;
+    }
+
+    private boolean checkSolved() {
+        // Maintain a reference to previously checked rotation matrix
+        int R[] = cubes[0][0][0].R;
+
+        // NOTE: the success condition is NOT determined by the absolute position of each cube.
+        //       Instead, success is achieved when all cubes are oriented in the same direction,
+        //       irrespective of whether this direction is the same as the starting direction.
+        //       This means success can occur when the whole cube is oriented in any direction,
+        //       so long as the relative position and orientation of the individual cubes form the globe.
+        //       Achieved by comparing the rotation matrices of each individual cube.
+
         for (int z = 0; z < D; z++) {
             for (int y = 0; y < D; y++) {
                 for (int x = 0; x < D; x++) {
-                    if (cubes[z][y][x].displayHandle != x + D*y + D*D*z ||
-                        cubes[z][y][x].anglex != 0.0f                   ||
-                        cubes[z][y][x].angley != 0.0f                   ||
-                        cubes[z][y][x].anglez != 0.0f) {
+                    // NOTE: an unnecessary comparison between the first cube's matrix
+                    //       to itself is made. Though not by any means a big performance
+                    //       issue, it can easily be avoided by adjusting the logic.
+                    //       For the time being, I cannot be bothered.
+
+                    if (!Arrays.equals(R, cubes[z][y][x].R)) {
                         return false;
                     }
+
+                    R = cubes[z][y][x].R;
                 }
             }
         }
+
         return true;
     }
 
     public class Cube {
-        int anglex, angley, anglez;
+        public int R[]; // 3x3 rotation matrix
         final int displayHandle;
 
         public Cube(final int displayHandle) {
-            anglex = angley = anglez = 0;
             this.displayHandle = displayHandle;
+            this.R = new int[] {1,0,0,  // [ 0 1 2 ]
+                                0,1,0,  // [ 3 4 5 ]
+                                0,0,1}; // [ 6 7 8 ]
         }
 
         public Cube(final Cube that) {
-            this.anglex = that.anglex;
-            this.angley = that.angley;
-            this.anglez = that.anglez;
             this.displayHandle = that.displayHandle;
+            this.R = new int[] {that.R[0], that.R[1], that.R[2],
+                                 that.R[3], that.R[4], that.R[5],
+                                 that.R[6], that.R[7], that.R[8]};
+        }
+
+        // =========================================================
+        // ==| NOTE: rows of the array are columns of the matrix |==
+        // =========================================================
+
+        /* x clockwise = [ 1  0  0 ] , x anti-clockwise = [ 1  0  0 ]
+                         [ 0  0 -1 ]                      [ 0  0  1 ]
+                         [ 0  1  0 ]                      [ 0 -1  0 ] */
+        private void rotateX(boolean clockwise) {
+            int c = clockwise ? 1 : -1;
+            int rotationM[] = {
+                R[0], -c*R[2], c*R[1],
+                R[3], -c*R[5], c*R[4],
+                R[6], -c*R[8], c*R[7]
+            };
+            R = rotationM;
+        }
+
+        /* y clockwise = [ 0  0  1 ] , y anti-clockwise = [ 0  0 -1 ]
+                         [ 0  1  0 ]                      [ 0  1  0 ]
+                         [-1  0  0 ]                      [ 1  0  0 ] */
+        private void rotateY(boolean clockwise) {
+            int c = clockwise ? 1 : -1;
+            int rotationM[] = {
+                c*R[2], R[1], -c*R[0],
+                c*R[5], R[4], -c*R[3],
+                c*R[8], R[7], -c*R[6]
+            };
+            R = rotationM;
+        }
+
+        /* z clockwise = [ 0 -1  0 ] , z anti-clockwise = [ 0  1  0 ]
+                         [ 1  0  0 ]                      [-1  0  0 ]
+                         [ 0  0  1 ]                      [ 0  0  1 ] */
+        private void rotateZ(boolean clockwise) {
+            int c = clockwise ? 1 : -1;
+            int rotationM[] = {
+                -c*R[1], c*R[0], R[2],
+                -c*R[4], c*R[3], R[5],
+                -c*R[7], c*R[6], R[8],
+            };
+            R = rotationM;
         }
     }
 }
