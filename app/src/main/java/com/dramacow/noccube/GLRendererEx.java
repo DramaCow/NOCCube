@@ -257,7 +257,7 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         lblWarning.set(0.0f, 0.0f, 0.5f, 0.25f);
         lblTitle.set(0.0f, 0.625f, 0.75f, 0.125f);
 
-        btnQuit.set(0.75f, 0.8125f, 0.1875f, 0.125f);
+        btnQuit.set(0.8125f, 0.875f, 0.1875f, 0.125f);
     }
 
     public void adjustViewAngle(float latAdj, float longAdj) {
