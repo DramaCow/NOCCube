@@ -127,7 +127,7 @@ public class NOCCubeRenderer implements CubeRenderer {
 
         switch (animation_state) {
             case EXPAND: {
-                seperation += 4.0f * dt;
+                seperation += 8.0f * dt;
 
                 if (seperation >= INIT_SEPERATION + 1.0f) {
                     seperation = INIT_SEPERATION + 1.0f;
@@ -143,7 +143,7 @@ public class NOCCubeRenderer implements CubeRenderer {
             }
 
             case CONTRACT: {
-                seperation += -4.0f * dt;
+                seperation += -8.0f * dt;
 
                 if (seperation <= INIT_SEPERATION) {
                     seperation = INIT_SEPERATION;

@@ -43,7 +43,7 @@ public class GLSurfaceViewEx extends GLSurfaceView {
 
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-                renderer.handleInput(norm_x, norm_y);
+                renderer.handleInput(norm_x, norm_y, 0);
 
                 x1 = x;
                 y1 = y;

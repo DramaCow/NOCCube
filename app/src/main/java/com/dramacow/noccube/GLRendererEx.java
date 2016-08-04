@@ -17,8 +17,27 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
     private Context context;
     private float time;
 
+    // Resources TODO: maybe some simple asset manager (nothing too fancy)
+    int inside;
+    int textures[];
+    int begin;
+    int leftarrow;
+    int rightarrow;
+    int warning;
+    int noccube;
+    int quit;
+
     // GUI
+    // MAIN MENU
     private Button btnBegin;
+    private Button btnIncreaseD;
+    private Button btnDecreaseD;
+    private Button lblWarning;
+    private Button lblTitle;
+    // PLAY
+    private Button btnQuit;
+    // Configuration variables
+    private int d = 2;
     // Matrices
     private final float guiMatrix[]
             = new float[16];
@@ -109,8 +128,8 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         GLES20.glUseProgram(program);
 
         // Load resources
-        final int inside = loadTexture(context, R.drawable.inside);
-        final int textures[] = {
+        inside = loadTexture(context, R.drawable.inside);
+        textures = new int[] {
             loadTexture(context, R.drawable.blue),
             loadTexture(context, R.drawable.green),
             loadTexture(context, R.drawable.red),
@@ -118,33 +137,67 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
             loadTexture(context, R.drawable.yellow),
             loadTexture(context, R.drawable.purple)
         };
-        final int begin = loadTexture(context, R.drawable.begin);
+        begin = loadTexture(context, R.drawable.begin);
+        leftarrow = loadTexture(context, R.drawable.leftarrow);
+        rightarrow = loadTexture(context, R.drawable.rightarrow);
+        warning = loadTexture(context, R.drawable.warning);
+        noccube = loadTexture(context, R.drawable.noccube);
+        quit = loadTexture(context, R.drawable.quit);
 
         // GUI setup
         // =========
         cube = new DisplayCubeRenderer(textures);
 
         Matrix.setIdentityM(guiMatrix, 0);
+
         btnBegin = new Button(begin) {
             @Override
             public void onClick() {
                 // Prevent restarting the Noccube when re-initialising the screen (e.g after putting the screen to sleep)
                 if (!(cube instanceof NOCCubeRenderer)) {
-                    NOCCube noccube = new NOCCube(4);
+                    NOCCube noccube = new NOCCube(d);
                     cube = new NOCCubeRenderer(noccube, inside, textures);
 
                     state = PLAY;
                 }
             }
         };
+        btnIncreaseD = new Button(rightarrow) {
+            @Override
+            public void onClick() {
+                d++;
+            }
+        };
+        btnDecreaseD = new Button(leftarrow) {
+            @Override
+            public void onClick() {
+                d = d > 2 ? d-1 : 2;
+            }
+        };
+        lblWarning = new Button(warning); // TODO: make label class (parent of button)
+        lblTitle = new Button(noccube);
+
+        btnQuit = new Button(quit) {
+            @Override
+            public void onClick() {
+                state = MAIN_MENU;
+                cube = new DisplayCubeRenderer(textures);
+            }
+        };
     }
 
-    public void handleInput(final float x, final float y) {
+    public void handleInput(final float x, final float y, final int input_type) {
         //Log.d("SAM", "TOUCHED: " + x + ", " + y);
 
         switch (state) {
             case MAIN_MENU: {
                 btnBegin.update(x, y, true); /*TODO: CHANGE*/ btnBegin.update(0, 0, false);
+                btnIncreaseD.update(x, y, true); /*TODO: CHANGE*/ btnIncreaseD.update(0, 0, false);
+                btnDecreaseD.update(x, y, true); /*TODO: CHANGE*/ btnDecreaseD.update(0, 0, false);
+                break;
+            }
+            case PLAY: {
+                btnQuit.update(x, y, true); /*TODO: CHANGE*/ btnQuit.update(0, 0, false);
                 break;
             }
         }
@@ -163,7 +216,22 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         switch (state) {
             case MAIN_MENU: {
                 btnBegin.draw(guiMatrix, program);
+                btnIncreaseD.draw(guiMatrix, program);
+                if (d > 2 ) btnDecreaseD.draw(guiMatrix, program);
+                if (d >= 6) lblWarning.draw(guiMatrix, program);
+                lblTitle.draw(guiMatrix, program);
                 break;
+            }
+            case PLAY: {
+                /* TODO: *throws up*
+                         Pretty sure this causes a massive slow down... */
+                if (((NOCCubeRenderer)cube).getAnimationState() == NOCCubeRenderer.COMPLETE) {
+                    state = MAIN_MENU;
+                    cube = new DisplayCubeRenderer(textures);
+                }
+                else if (((NOCCubeRenderer)cube).getAnimationState() < NOCCubeRenderer.SOLVED) {
+                    btnQuit.draw(guiMatrix, program);
+                }
             }
         }
         cube.draw(vpMatrix, program, dt);
@@ -183,7 +251,13 @@ public class GLRendererEx implements GLSurfaceView.Renderer {
         Matrix.setLookAtM(tmpMatrix, 0, eyeX, eyeY, eyeZ, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
         Matrix.multiplyMM(guiMatrix, 0, guiMatrix.clone(), 0, tmpMatrix, 0);*/
 
-        btnBegin.set(0.0f, -0.625f, 0.625f, 0.1f);
+        btnBegin.set(0.0f, -0.625f, 0.5f, 0.125f);
+        btnIncreaseD.set(0.75f, -0.625f, 0.1875f, 0.125f);
+        btnDecreaseD.set(-0.75f, -0.625f, 0.1875f, 0.125f);
+        lblWarning.set(0.0f, 0.0f, 0.5f, 0.25f);
+        lblTitle.set(0.0f, 0.625f, 0.75f, 0.125f);
+
+        btnQuit.set(0.75f, 0.8125f, 0.1875f, 0.125f);
     }
 
     public void adjustViewAngle(float latAdj, float longAdj) {
